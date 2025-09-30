@@ -83,6 +83,7 @@ def _chat_completion(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 500,
 ) -> str:
     """Helper function for chat completion API calls."""
     try:
@@ -95,6 +96,7 @@ def _chat_completion(
             "model": model,
             "messages": [{"role": "user", "content": query}],
             "reasoning_effort": reasoning_effort,
+            "max_tokens": max_tokens,
         }
 
         if search_mode:
@@ -197,6 +199,7 @@ def ask(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 500,
 ) -> str:
     """
     Get a direct answer from general web search. Fast and cost-effective.
@@ -220,6 +223,7 @@ def ask(
         domain_filter: Include/exclude domains (e.g., ['wikipedia.org'] or ['-reddit.com'])
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 500)
 
     Returns:
         AI-synthesized answer with citations
@@ -233,6 +237,7 @@ def ask(
         domain_filter=domain_filter,
         return_images=return_images,
         return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
     )
 
 
@@ -244,6 +249,7 @@ def ask_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 1000,
 ) -> str:
     """
     Like 'ask' but significantly MORE comprehensive and detailed for general web questions. Slower and more expensive.
@@ -257,6 +263,7 @@ def ask_more(
         domain_filter: Include/exclude domains
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 1000)
 
     Returns:
         Comprehensive AI-synthesized answer with detailed citations
@@ -270,6 +277,7 @@ def ask_more(
         domain_filter=domain_filter,
         return_images=return_images,
         return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
     )
 
 
@@ -281,6 +289,7 @@ def ask_sec(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 500,
 ) -> str:
     """
     Get answers from SEC filings and financial regulatory documents.
@@ -307,6 +316,7 @@ def ask_sec(
         domain_filter: Include/exclude domains
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 500)
 
     Returns:
         AI-synthesized answer from SEC filings with citations
@@ -320,6 +330,7 @@ def ask_sec(
         domain_filter=domain_filter,
         return_images=return_images,
         return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
     )
 
 
@@ -331,6 +342,7 @@ def ask_sec_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 1000,
 ) -> str:
     """
     Like 'ask_sec' but MORE comprehensive financial analysis. Slower and more expensive.
@@ -344,6 +356,7 @@ def ask_sec_more(
         domain_filter: Include/exclude domains
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 1000)
 
     Returns:
         Comprehensive financial analysis from SEC filings
@@ -357,6 +370,7 @@ def ask_sec_more(
         domain_filter=domain_filter,
         return_images=return_images,
         return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
     )
 
 
@@ -368,6 +382,7 @@ def ask_academic(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 500,
 ) -> str:
     """
     Get answers from scholarly papers and academic research publications.
@@ -393,6 +408,7 @@ def ask_academic(
         domain_filter: Include/exclude domains
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 500)
 
     Returns:
         AI-synthesized answer from academic sources with citations
@@ -406,6 +422,7 @@ def ask_academic(
         domain_filter=domain_filter,
         return_images=return_images,
         return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
     )
 
 
@@ -417,6 +434,7 @@ def ask_academic_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
+    max_tokens: int = 1000,
 ) -> str:
     """
     Like 'ask_academic' but MORE comprehensive academic research. Slower and more expensive.
@@ -430,6 +448,7 @@ def ask_academic_more(
         domain_filter: Include/exclude domains
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 1000)
 
     Returns:
         Comprehensive academic research synthesis
@@ -443,6 +462,7 @@ def ask_academic_more(
         domain_filter=domain_filter,
         return_images=return_images,
         return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
     )
 
 
