@@ -81,18 +81,21 @@ def search(
     domain_filter: Optional[list[str]] = None,
 ) -> str:
     """
-    Returns a list of web sources with URLs, titles, and snippets - like getting raw Google results.
+    Find and evaluate sources yourself - returns URLs, titles, and snippets so you can assess quality and make your own conclusions.
 
-    Use when you need:
-    - Specific documents or links to reference
-    - Multiple sources to evaluate
-    - Discovery: seeing what's available on a topic
+    Use when:
+    - You need to assess source quality or credibility
+    - Looking for specific documents, reports, or official pages
+    - You want control over what information to trust
+    - Research requires seeing multiple perspectives
+
+    Think: The librarian shows you the shelf - you decide what matters.
 
     Examples:
     - Find official documentation sites
-    - Look for recent articles on a topic
-    - Filter to trusted domains like .edu or .gov sites
-    - Exclude social media sites from results
+    - Evaluate multiple sources on a controversial topic
+    - Locate specific reports or papers to cite
+    - Filter to trusted domains like .edu or .gov
 
     Args:
         query: Search query to find relevant sources
@@ -145,22 +148,30 @@ def ask(
     return_related_questions: bool = False,
 ) -> str:
     """
-    Returns an AI-synthesized answer from web search with citations. Fast and cost-effective.
+    Get a direct answer - returns AI-synthesized response with citations. Perplexity reads sources and gives you the conclusion.
+
+    Use when:
+    - You need a quick fact or explanation
+    - Answer is the goal, not evaluating sources
+    - You trust Perplexity's synthesis
+    - Time-sensitive questions
+
+    Think: The librarian reads the books and tells you the answer.
 
     Special capabilities:
-    - Academic mode: Search scholarly papers and research publications
+    - Academic mode: Search scholarly papers and research
     - SEC mode: Search financial filings and regulatory documents
-    - Recency filtering: Focus on results from the past day, week, or month
+    - Recency filtering: Focus on recent results (day/week/month)
     - Domain filtering: Include or exclude specific websites
-    - Images: Get related images in the response
-    - Related questions: Receive follow-up question suggestions
+    - Images: Get related visual content
+    - Related questions: Receive follow-up suggestions
 
     Example use cases:
-    - Quick facts and explanations about any topic
-    - Recent news and developments (use recency filter)
-    - Academic research questions (use academic mode)
-    - Company financial information (use SEC mode)
-    - Visual content needs (enable images)
+    - "What is X?" - quick facts and definitions
+    - "How does X compare to Y?" - comparative analysis
+    - Recent developments (use recency='week')
+    - Academic questions (use search_mode='academic')
+    - Company financials (use search_mode='sec')
 
     Args:
         query: Question or topic to get an AI answer about
@@ -235,7 +246,7 @@ def ask_more(
 
     Use when: Standard 'ask' doesn't provide enough depth or you need thorough investigation.
 
-    Same parameters as 'ask' (search_mode, domain_filter, recency, etc.) but with deeper analysis.
+    Same capabilities as 'ask' but with deeper analysis.
 
     Args:
         query: Complex question requiring deeper analysis
