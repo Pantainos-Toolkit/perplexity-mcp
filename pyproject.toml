@@ -16,3 +16,6 @@ Homepage = "https://github.com/yourusername/perplexity-mcp"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
