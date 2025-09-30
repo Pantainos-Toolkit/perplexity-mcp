@@ -159,8 +159,9 @@ def ask(
     Think: The librarian reads the books and tells you the answer.
 
     Special capabilities:
-    - Academic mode: Search scholarly papers and research
-    - SEC mode: Search financial filings and regulatory documents
+    - Academic mode: Search scholarly papers and research publications
+    - SEC mode: Search financial filings (10-K, 10-Q, 8-K) and regulatory documents
+      → Use for: earnings, quarterly results, revenue, margins, cash flow, financial performance
     - Recency filtering: Focus on recent results (day/week/month)
     - Domain filtering: Include or exclude specific websites
     - Images: Get related visual content
@@ -171,7 +172,8 @@ def ask(
     - "How does X compare to Y?" - comparative analysis
     - Recent developments (use recency='week')
     - Academic questions (use search_mode='academic')
-    - Company financials (use search_mode='sec')
+    - Company earnings/financials (MUST use search_mode='sec')
+      Examples: "Tesla Q4 earnings", "Apple revenue 2024", "Microsoft cash flow"
 
     Args:
         query: Question or topic to get an AI answer about
@@ -246,7 +248,10 @@ def ask_more(
 
     Use when: Standard 'ask' doesn't provide enough depth or you need thorough investigation.
 
-    Same capabilities as 'ask' but with deeper analysis.
+    Same capabilities as 'ask' including:
+    - SEC mode for financial filings (earnings, quarterly results, 10-K/10-Q)
+    - Academic mode for scholarly research
+    - All filtering options (recency, domain, images, etc.)
 
     Args:
         query: Complex question requiring deeper analysis
