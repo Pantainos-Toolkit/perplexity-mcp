@@ -163,6 +163,15 @@ def search(
     query: str,
     max_results: int = 10,
     max_tokens_per_page: int = 300,
+    recency: Optional[Literal["day", "week", "month"]] = None,
+    domain_filter: Optional[list[str]] = None,
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    search_mode: Optional[Literal["academic"]] = None,
+    search_context_size: Optional[Literal["low", "high"]] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     **PREFER THIS FIRST** - Find and evaluate sources yourself. Returns URLs, titles, and snippets so you can assess quality and make your own conclusions.
@@ -181,12 +190,32 @@ def search(
     - Evaluate multiple sources on a controversial topic
     - Locate specific reports or papers to cite
 
-    Note: Domain filtering is not supported by the Search API. Use ask* tools for domain filtering.
-
     Args:
         query: Search query to find relevant sources
         max_results: Maximum number of results to return (default: 10)
         max_tokens_per_page: Maximum tokens to extract per page (default: 300)
+        recency: Quick filter for recent content - 'day', 'week', or 'month'. Simpler than search_after_date. If both specified, search_after_date takes precedence.
+        domain_filter: Filter sources by domain or URL. Prefix with '-' to exclude.
+            - Allowlist only: ['wikipedia.org', 'github.com']
+            - Denylist (exclude): ['-reddit.com', '-quora.com']
+            - URL-specific: ['https://stackoverflow.com/questions/tagged/python']
+            - Mixed: ['github.com', '-https://github.com/trending'] (allow domain, exclude specific page)
+        search_after_date: Filter by publication date - content published after date (format: "MM/DD/YYYY"). Use for "results since X".
+        search_before_date: Filter by publication date - content published before date (format: "MM/DD/YYYY"). Use for "results before X".
+        last_updated_after: Filter by last-modified date - content updated after date (format: "MM/DD/YYYY"). Use for "actively maintained content".
+        last_updated_before: Filter by last-modified date - content updated before date (format: "MM/DD/YYYY"). Use for "stale/archived content".
+        search_mode: Set to "academic" to prioritize scholarly sources (papers, journals, research publications).
+        search_context_size: Control content extraction depth.
+            - 'low': Minimal extraction, faster, lighter results
+            - 'high': Comprehensive extraction, more detailed content
+            - Omit for default/medium extraction
+        user_location: Geographic context for localized results. Dict with optional fields:
+            - country (str): ISO code like "US", "GB"
+            - region (str): State/province, e.g. "CA", "Ontario"
+            - city (str): City name, e.g. "San Francisco"
+            - latitude (float): Decimal degrees
+            - longitude (float): Decimal degrees
+            Example: {"country": "US", "region": "CA", "city": "San Francisco"}
 
     Returns:
         Formatted search results with titles, URLs, and snippets
@@ -202,6 +231,34 @@ def search(
             "max_results": max_results,
             "max_tokens_per_page": max_tokens_per_page,
         }
+
+        # Add optional filters
+        if recency:
+            payload["search_recency_filter"] = recency
+
+        if domain_filter:
+            payload["search_domain_filter"] = domain_filter
+
+        if search_after_date:
+            payload["search_after_date_filter"] = search_after_date
+
+        if search_before_date:
+            payload["search_before_date_filter"] = search_before_date
+
+        if last_updated_after:
+            payload["last_updated_after_filter"] = last_updated_after
+
+        if last_updated_before:
+            payload["last_updated_before_filter"] = last_updated_before
+
+        if search_mode:
+            payload["search_mode"] = search_mode
+
+        if search_context_size:
+            payload["search_context_size"] = search_context_size
+
+        if user_location:
+            payload["user_location"] = user_location
 
         with httpx.Client(timeout=30.0) as client:
             response = client.post(SEARCH_ENDPOINT, json=payload, headers=headers)
@@ -227,7 +284,7 @@ def ask(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 500,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -261,7 +318,7 @@ def ask(
             - Mixed: ['github.com', '-https://github.com/trending'] (allow domain, exclude specific page)
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 500). Higher = longer responses but more expensive. Includes citations.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 pages). Use for simple facts.
             - 'medium': Balanced speed/coverage (~5-10 pages). Good default.
@@ -308,7 +365,7 @@ def ask_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 1000,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -332,7 +389,7 @@ def ask_more(
             - Mixed: ['github.com', '-https://github.com/trending'] (allow domain, exclude specific page)
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 1000). Higher = longer responses but more expensive. Includes citations.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 pages). Use for simple facts.
             - 'medium': Balanced speed/coverage (~5-10 pages). Good default.
@@ -379,7 +436,7 @@ def ask_sec(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 500,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -415,7 +472,7 @@ def ask_sec(
             - URL-specific: ['https://sec.gov/cik-lookup/0001234567']
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 500). Higher = longer responses but more expensive. Includes citations.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 filings). Use for simple metrics.
             - 'medium': Balanced speed/coverage (~5-10 filings). Good default.
@@ -462,7 +519,7 @@ def ask_sec_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 1000,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -485,7 +542,7 @@ def ask_sec_more(
             - URL-specific: ['https://sec.gov/cik-lookup/0001234567']
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 1000). Higher = longer responses but more expensive. Includes citations.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 filings). Use for simple metrics.
             - 'medium': Balanced speed/coverage (~5-10 filings). Good default.
@@ -532,7 +589,7 @@ def ask_academic(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 500,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -567,7 +624,7 @@ def ask_academic(
             - URL-specific: ['https://arxiv.org/list/cs.AI/recent']
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 500). Higher = longer responses but more expensive. Includes citations.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 papers). Use for simple fact-checking.
             - 'medium': Balanced speed/coverage (~5-10 papers). Good default.
@@ -614,7 +671,7 @@ def ask_academic_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 1000,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -637,7 +694,7 @@ def ask_academic_more(
             - URL-specific: ['https://arxiv.org/list/cs.AI/recent']
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 1000). Higher = longer responses but more expensive. Includes citations.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 papers). Use for simple fact-checking.
             - 'medium': Balanced speed/coverage (~5-10 papers). Good default.
@@ -684,7 +741,7 @@ def ask_reasoning(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 500,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -715,7 +772,7 @@ def ask_reasoning(
             - Mixed: ['github.com', '-https://github.com/trending'] (allow domain, exclude specific page)
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 500). Higher = longer responses but more expensive. Includes citations and reasoning steps.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations and reasoning steps.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 pages). Use for simple facts.
             - 'medium': Balanced speed/coverage (~5-10 pages). Good default.
@@ -762,7 +819,7 @@ def ask_reasoning_more(
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
-    max_tokens: int = 1000,
+    max_tokens: int = 5000,
     search_context_size: Literal["low", "medium", "high"] = "medium",
     search_after_date: Optional[str] = None,
     search_before_date: Optional[str] = None,
@@ -789,7 +846,7 @@ def ask_reasoning_more(
             - Mixed: ['github.com', '-https://github.com/trending'] (allow domain, exclude specific page)
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
-        max_tokens: Maximum response length in tokens (default: 1000). Higher = longer responses but more expensive. Includes citations and reasoning steps.
+        max_tokens: Maximum response length in tokens (default: 5000). Higher = longer responses but more expensive. Includes citations and reasoning steps.
         search_context_size: Web search depth - controls sources retrieved and cost.
             - 'low': Faster, cheaper, fewer sources (~3-5 pages). Use for simple facts.
             - 'medium': Balanced speed/coverage (~5-10 pages). Good default.
