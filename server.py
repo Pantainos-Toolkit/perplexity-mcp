@@ -76,14 +76,19 @@ def format_chat_response(response: dict) -> str:
 
 def _chat_completion(
     query: str,
-    model: Literal["sonar", "sonar-pro"],
+    model: Literal["sonar", "sonar-pro", "sonar-reasoning", "sonar-reasoning-pro"],
     search_mode: Optional[Literal["web", "academic", "sec"]] = None,
     recency: Optional[Literal["day", "week", "month"]] = None,
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 500,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """Helper function for chat completion API calls."""
     try:
@@ -116,6 +121,23 @@ def _chat_completion(
         if return_related_questions:
             payload["return_related_questions"] = True
 
+        # Date filtering
+        if search_after_date:
+            payload["search_after_date_filter"] = search_after_date
+
+        if search_before_date:
+            payload["search_before_date_filter"] = search_before_date
+
+        if last_updated_after:
+            payload["last_updated_after_filter"] = last_updated_after
+
+        if last_updated_before:
+            payload["last_updated_before_filter"] = last_updated_before
+
+        # Location filtering
+        if user_location:
+            payload["web_search_options"]["user_location"] = user_location
+
         with httpx.Client(timeout=60.0) as client:
             response = client.post(CHAT_ENDPOINT, json=payload, headers=headers)
             response.raise_for_status()
@@ -133,7 +155,6 @@ def _chat_completion(
 def search(
     query: str,
     max_results: int = 10,
-    domain_filter: Optional[list[str]] = None,
     max_tokens_per_page: int = 300,
 ) -> str:
     """
@@ -152,13 +173,12 @@ def search(
     - Find official documentation sites
     - Evaluate multiple sources on a controversial topic
     - Locate specific reports or papers to cite
-    - Filter to trusted domains like .edu or .gov
+
+    Note: Domain filtering is not supported by the Search API. Use ask* tools for domain filtering.
 
     Args:
         query: Search query to find relevant sources
         max_results: Maximum number of results to return (default: 10)
-        domain_filter: List of domains to include (e.g., ['wikipedia.org']) or
-                      exclude (prefix with '-', e.g., ['-reddit.com'])
         max_tokens_per_page: Maximum tokens to extract per page (default: 300)
 
     Returns:
@@ -175,9 +195,6 @@ def search(
             "max_results": max_results,
             "max_tokens_per_page": max_tokens_per_page,
         }
-
-        if domain_filter:
-            payload["search_domain_filter"] = domain_filter
 
         with httpx.Client(timeout=30.0) as client:
             response = client.post(SEARCH_ENDPOINT, json=payload, headers=headers)
@@ -204,7 +221,12 @@ def ask(
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 500,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     Get a direct answer from general web search. Fast and cost-effective.
@@ -228,7 +250,12 @@ def ask(
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
         max_tokens: Maximum tokens in response (default: 500)
-        search_context_size: Search context size - 'low' (efficient, default), 'medium', 'high' (comprehensive)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
 
     Returns:
         AI-synthesized answer with citations
@@ -243,6 +270,11 @@ def ask(
         return_related_questions=return_related_questions,
         max_tokens=max_tokens,
         search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
     )
 
 
@@ -254,7 +286,12 @@ def ask_more(
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 1000,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     Like 'ask' but significantly MORE comprehensive and detailed for general web questions. Slower and more expensive.
@@ -268,7 +305,12 @@ def ask_more(
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
         max_tokens: Maximum tokens in response (default: 1000)
-        search_context_size: Search context size - 'low' (efficient, default), 'medium', 'high' (comprehensive)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
 
     Returns:
         Comprehensive AI-synthesized answer with detailed citations
@@ -283,6 +325,11 @@ def ask_more(
         return_related_questions=return_related_questions,
         max_tokens=max_tokens,
         search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
     )
 
 
@@ -294,7 +341,12 @@ def ask_sec(
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 500,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     Get answers from SEC filings and financial regulatory documents.
@@ -321,7 +373,12 @@ def ask_sec(
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
         max_tokens: Maximum tokens in response (default: 500)
-        search_context_size: Search context size - 'low' (efficient, default), 'medium', 'high' (comprehensive)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
 
     Returns:
         AI-synthesized answer from SEC filings with citations
@@ -336,6 +393,11 @@ def ask_sec(
         return_related_questions=return_related_questions,
         max_tokens=max_tokens,
         search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
     )
 
 
@@ -347,7 +409,12 @@ def ask_sec_more(
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 1000,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     Like 'ask_sec' but MORE comprehensive financial analysis. Slower and more expensive.
@@ -361,7 +428,12 @@ def ask_sec_more(
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
         max_tokens: Maximum tokens in response (default: 1000)
-        search_context_size: Search context size - 'low' (efficient, default), 'medium', 'high' (comprehensive)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
 
     Returns:
         Comprehensive financial analysis from SEC filings
@@ -376,6 +448,11 @@ def ask_sec_more(
         return_related_questions=return_related_questions,
         max_tokens=max_tokens,
         search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
     )
 
 
@@ -387,7 +464,12 @@ def ask_academic(
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 500,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     Get answers from scholarly papers and academic research publications.
@@ -413,7 +495,12 @@ def ask_academic(
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
         max_tokens: Maximum tokens in response (default: 500)
-        search_context_size: Search context size - 'low' (efficient, default), 'medium', 'high' (comprehensive)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
 
     Returns:
         AI-synthesized answer from academic sources with citations
@@ -428,6 +515,11 @@ def ask_academic(
         return_related_questions=return_related_questions,
         max_tokens=max_tokens,
         search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
     )
 
 
@@ -439,7 +531,12 @@ def ask_academic_more(
     return_images: bool = False,
     return_related_questions: bool = False,
     max_tokens: int = 1000,
-    search_context_size: Literal["low", "medium", "high"] = "low",
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
 ) -> str:
     """
     Like 'ask_academic' but MORE comprehensive academic research. Slower and more expensive.
@@ -453,7 +550,12 @@ def ask_academic_more(
         return_images: Include related images
         return_related_questions: Get follow-up question suggestions
         max_tokens: Maximum tokens in response (default: 1000)
-        search_context_size: Search context size - 'low' (efficient, default), 'medium', 'high' (comprehensive)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
 
     Returns:
         Comprehensive academic research synthesis
@@ -468,6 +570,131 @@ def ask_academic_more(
         return_related_questions=return_related_questions,
         max_tokens=max_tokens,
         search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
+    )
+
+
+@mcp.tool
+def ask_reasoning(
+    query: str,
+    recency: Optional[Literal["day", "week", "month"]] = None,
+    domain_filter: Optional[list[str]] = None,
+    return_images: bool = False,
+    return_related_questions: bool = False,
+    max_tokens: int = 500,
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
+) -> str:
+    """
+    Get answers with step-by-step reasoning using the sonar-reasoning model.
+
+    Shows explicit reasoning process with `<think>` sections before providing the final answer.
+    Useful for complex problems that benefit from transparent problem-solving steps.
+
+    Use for:
+    - Multi-step problem solving
+    - Logical reasoning tasks
+    - Questions requiring explicit thought process
+    - Tasks where you want to see the AI's reasoning
+
+    Args:
+        query: Your question
+        recency: Focus on recent results - 'day', 'week', or 'month'
+        domain_filter: Include/exclude domains (e.g., ['wikipedia.org'] or ['-reddit.com'])
+        return_images: Include related images
+        return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 500)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
+
+    Returns:
+        Answer with explicit reasoning steps and citations
+    """
+    return _chat_completion(
+        query=query,
+        model="sonar-reasoning",
+        search_mode="web",
+        recency=recency,
+        domain_filter=domain_filter,
+        return_images=return_images,
+        return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
+        search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
+    )
+
+
+@mcp.tool
+def ask_reasoning_more(
+    query: str,
+    recency: Optional[Literal["day", "week", "month"]] = None,
+    domain_filter: Optional[list[str]] = None,
+    return_images: bool = False,
+    return_related_questions: bool = False,
+    max_tokens: int = 1000,
+    search_context_size: Literal["low", "medium", "high"] = "medium",
+    search_after_date: Optional[str] = None,
+    search_before_date: Optional[str] = None,
+    last_updated_after: Optional[str] = None,
+    last_updated_before: Optional[str] = None,
+    user_location: Optional[dict] = None,
+) -> str:
+    """
+    Like 'ask_reasoning' but with MORE comprehensive reasoning using sonar-reasoning-pro.
+
+    Premier reasoning model with deeper Chain of Thought analysis. Provides more thorough
+    step-by-step reasoning for complex analytical tasks.
+
+    Use when: Standard 'ask_reasoning' doesn't provide enough depth for complex reasoning tasks.
+
+    Args:
+        query: Your complex question
+        recency: Focus on recent results - 'day', 'week', or 'month'
+        domain_filter: Include/exclude domains
+        return_images: Include related images
+        return_related_questions: Get follow-up question suggestions
+        max_tokens: Maximum tokens in response (default: 1000)
+        search_context_size: Search context size - 'low' (efficient), 'medium' (default), 'high' (comprehensive)
+        search_after_date: Only results published after this date (format: "MM/DD/YYYY")
+        search_before_date: Only results published before this date (format: "MM/DD/YYYY")
+        last_updated_after: Only results updated after this date (format: "MM/DD/YYYY")
+        last_updated_before: Only results updated before this date (format: "MM/DD/YYYY")
+        user_location: Geographic location for localized results (dict with country, region, city, latitude, longitude)
+
+    Returns:
+        Comprehensive answer with detailed reasoning steps and citations
+    """
+    return _chat_completion(
+        query=query,
+        model="sonar-reasoning-pro",
+        search_mode="web",
+        recency=recency,
+        domain_filter=domain_filter,
+        return_images=return_images,
+        return_related_questions=return_related_questions,
+        max_tokens=max_tokens,
+        search_context_size=search_context_size,
+        search_after_date=search_after_date,
+        search_before_date=search_before_date,
+        last_updated_after=last_updated_after,
+        last_updated_before=last_updated_before,
+        user_location=user_location,
     )
 
 
