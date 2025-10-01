@@ -205,7 +205,7 @@ def ask(
         query: Your question
         sources: Source type - 'web' (general), 'sec' (financial filings), 'academic' (scholarly)
         scope: Search breadth - 'standard' (normal) or 'extensive' (2x more sources)
-        thoroughness: Content extraction - 'quick' (faster, highlights) or 'detailed' (full text per source)
+        thoroughness: Content extraction - 'quick' (recommended) or 'detailed' (only if absolutely needed, prefer scope='extensive' instead)
         recency: Recent content - 'day', 'week', or 'month'
         domain_filter: Filter by domain. Use '-' to exclude. Examples: ['github.com'], ['-reddit.com']
         return_related_questions: Get follow-up questions
@@ -251,7 +251,7 @@ def ask_reasoning(
     Args:
         query: Your question
         scope: Search breadth - 'standard' (normal) or 'extensive' (2x more sources, deeper reasoning)
-        thoroughness: Content extraction - 'quick' (faster, highlights) or 'detailed' (full text per source)
+        thoroughness: Content extraction - 'quick' (recommended) or 'detailed' (only if absolutely needed, prefer scope='extensive' instead)
         recency: Recent content - 'day', 'week', or 'month'
         domain_filter: Filter by domain. Use '-' to exclude. Examples: ['github.com'], ['-reddit.com']
         return_related_questions: Get follow-up questions
