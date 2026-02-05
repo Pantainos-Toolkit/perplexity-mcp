@@ -10,6 +10,7 @@ Workflow:
 """
 
 import os
+from datetime import date, timedelta
 from typing import Literal, Optional
 from fastmcp import FastMCP
 import httpx
@@ -33,6 +34,59 @@ if not PERPLEXITY_API_KEY:
 PERPLEXITY_API_BASE = "https://api.perplexity.ai"
 SEARCH_ENDPOINT = f"{PERPLEXITY_API_BASE}/search"
 CHAT_ENDPOINT = f"{PERPLEXITY_API_BASE}/chat/completions"
+
+
+# Type alias for recency options
+RecencyOption = Literal[
+    "hour", "today", "day", "yesterday", "week", "last_week", "month", "last_month", "year"
+]
+
+# Values that pass straight through to search_recency_filter
+_RECENCY_PASSTHROUGH = {"hour", "day", "week", "month", "year"}
+
+
+def _resolve_recency(recency: Optional[str]) -> dict:
+    """Convert friendly recency value to Perplexity API parameters.
+
+    Passthrough values (hour/day/week/month/year) use search_recency_filter.
+    Bounded values (today/yesterday/last_week/last_month) compute exact date ranges.
+    """
+    if not recency:
+        return {}
+
+    if recency in _RECENCY_PASSTHROUGH:
+        return {"search_recency_filter": recency}
+
+    today = date.today()
+    fmt = "%m/%d/%Y"
+
+    if recency == "today":
+        return {"search_after_date_filter": today.strftime(fmt)}
+
+    if recency == "yesterday":
+        yesterday = today - timedelta(days=1)
+        return {
+            "search_after_date_filter": yesterday.strftime(fmt),
+            "search_before_date_filter": today.strftime(fmt),
+        }
+
+    if recency == "last_week":
+        this_monday = today - timedelta(days=today.weekday())
+        last_monday = this_monday - timedelta(weeks=1)
+        return {
+            "search_after_date_filter": last_monday.strftime(fmt),
+            "search_before_date_filter": this_monday.strftime(fmt),
+        }
+
+    if recency == "last_month":
+        first_of_month = today.replace(day=1)
+        first_of_last_month = (first_of_month - timedelta(days=1)).replace(day=1)
+        return {
+            "search_after_date_filter": first_of_last_month.strftime(fmt),
+            "search_before_date_filter": first_of_month.strftime(fmt),
+        }
+
+    return {}
 
 
 def format_search_results(results: list[dict]) -> str:
@@ -80,7 +134,7 @@ def _chat_completion(
     query: str,
     model: Literal["sonar", "sonar-pro", "sonar-reasoning-pro"],
     search_mode: Optional[Literal["web", "academic", "sec"]] = None,
-    recency: Optional[Literal["day", "week", "month", "year"]] = None,
+    recency: Optional[RecencyOption] = None,
     domain_filter: Optional[list[str]] = None,
     return_images: bool = False,
     return_related_questions: bool = False,
@@ -113,8 +167,8 @@ def _chat_completion(
         if search_mode:
             payload["search_mode"] = search_mode
 
-        if recency:
-            payload["search_recency_filter"] = recency
+        # Resolve recency to the right API params
+        payload.update(_resolve_recency(recency))
 
         if domain_filter:
             payload["search_domain_filter"] = domain_filter
@@ -144,6 +198,9 @@ def search(
     max_results: int = 10,
     max_tokens_per_page: int = 1024,
     country: Optional[str] = None,
+    recency: Optional[RecencyOption] = None,
+    domain_filter: Optional[list[str]] = None,
+    sources: Optional[Literal["web", "academic", "sec"]] = None,
 ) -> str:
     """
     **PREFER THIS FIRST** - Find and evaluate sources yourself. Returns URLs, titles, and snippets.
@@ -153,6 +210,9 @@ def search(
         max_results: Max results (1-20, default: 10)
         max_tokens_per_page: Max tokens per page (default: 1024)
         country: Two-letter country code to filter results (e.g., 'US', 'GB', 'DE')
+        recency: Time filter - 'hour', 'today', 'day', 'yesterday', 'week', 'last_week', 'month', 'last_month', 'year'
+        domain_filter: Filter by domain. Use '-' to exclude. Examples: ['github.com'], ['-reddit.com']
+        sources: Source type - 'web' (general), 'sec' (financial filings), 'academic' (scholarly)
 
     Returns:
         Search results with titles, URLs, and snippets
@@ -171,6 +231,15 @@ def search(
 
         if country:
             payload["country"] = country
+
+        # Resolve recency to the right API params
+        payload.update(_resolve_recency(recency))
+
+        if domain_filter:
+            payload["search_domain_filter"] = domain_filter
+
+        if sources:
+            payload["search_mode"] = sources
 
         with httpx.Client(timeout=30.0) as client:
             response = client.post(SEARCH_ENDPOINT, json=payload, headers=headers)
@@ -195,7 +264,7 @@ def ask(
     sources: Literal["web", "sec", "academic"] = "web",
     scope: Literal["standard", "extensive"] = "standard",
     thoroughness: Literal["quick", "detailed"] = "quick",
-    recency: Optional[Literal["day", "week", "month", "year"]] = None,
+    recency: Optional[RecencyOption] = None,
     domain_filter: Optional[list[str]] = None,
     return_related_questions: bool = False,
     max_tokens: int = 5000,
@@ -208,7 +277,7 @@ def ask(
         sources: Source type - 'web' (general), 'sec' (financial filings), 'academic' (scholarly)
         scope: Search breadth - 'standard' (normal) or 'extensive' (2x more sources)
         thoroughness: Content extraction - 'quick' (recommended) or 'detailed' (only if absolutely needed, prefer scope='extensive' instead)
-        recency: Recent content - 'day', 'week', or 'month'
+        recency: Time filter - 'hour', 'today', 'day', 'yesterday', 'week', 'last_week', 'month', 'last_month', 'year'
         domain_filter: Filter by domain. Use '-' to exclude. Examples: ['github.com'], ['-reddit.com']
         return_related_questions: Get follow-up questions
         max_tokens: Max response length (default: 5000)
@@ -240,7 +309,7 @@ def ask_reasoning(
     query: str,
     scope: Literal["standard", "extensive"] = "standard",
     thoroughness: Literal["quick", "detailed"] = "quick",
-    recency: Optional[Literal["day", "week", "month", "year"]] = None,
+    recency: Optional[RecencyOption] = None,
     domain_filter: Optional[list[str]] = None,
     return_related_questions: bool = False,
     max_tokens: int = 5000,
@@ -254,7 +323,7 @@ def ask_reasoning(
         query: Your question
         scope: Search breadth - 'standard' (normal) or 'extensive' (2x more sources, deeper reasoning)
         thoroughness: Content extraction - 'quick' (recommended) or 'detailed' (only if absolutely needed, prefer scope='extensive' instead)
-        recency: Recent content - 'day', 'week', or 'month'
+        recency: Time filter - 'hour', 'today', 'day', 'yesterday', 'week', 'last_week', 'month', 'last_month', 'year'
         domain_filter: Filter by domain. Use '-' to exclude. Examples: ['github.com'], ['-reddit.com']
         return_related_questions: Get follow-up questions
         max_tokens: Max response length (default: 5000)
