@@ -13,6 +13,7 @@ import os
 from datetime import date, timedelta
 from typing import Literal, Optional
 from fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 import httpx
 from dotenv import load_dotenv
 
@@ -192,7 +193,7 @@ def _chat_completion(
         return f"Request failed: {str(e)}"
 
 
-@mcp.tool
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=True))
 def search(
     query: str,
     max_results: int = 10,
@@ -258,7 +259,7 @@ def search(
         return f"Search failed: {str(e)}"
 
 
-@mcp.tool
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=True))
 def ask(
     query: str,
     sources: Literal["web", "sec", "academic"] = "web",
@@ -304,7 +305,7 @@ def ask(
     )
 
 
-@mcp.tool
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=True))
 def ask_reasoning(
     query: str,
     scope: Literal["standard", "extensive"] = "standard",
